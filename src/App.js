@@ -182,7 +182,7 @@ const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-
+  const [showTryAgain, setShowTryAgain] = useState(false);
   const handleSignup = async (event) => {
     event.preventDefault();
     try {
@@ -242,9 +242,9 @@ const App = () => {
       setIsAnswered(false);
     } else {
       alert(`Your score: ${score}/${questions.length}`);
-      if (userId) {
-        submitScore(userId, score); // Submit score to Firestore for the user
-      }
+
+      submitScore(userId, score); // Submit score to Firestore for the user
+      setShowTryAgain(true);
     }
     setResultMessage("");
   };
@@ -268,6 +268,14 @@ const App = () => {
       console.error("Error submitting score:", error);
     }
   }
+
+  const restartQuiz = () => {
+    setCurrentQuestionIndex(0);
+    setScore(0);
+    setIsAnswered(false);
+    setResultMessage("");
+    setShowTryAgain(false);
+  };
 
   const toggleForm = () => {
     setIsSignUp(!isSignUp);
@@ -302,89 +310,99 @@ const App = () => {
   return (
     <div className="App">
       <SketchfabViewer />
-      <div>
-        {/* Conditional Rendering for SignUp/SignIn */}
+
+      {isLoggedIn ? (
         <div>
-          {isSignUp ? (
-            <div>
-              <h2>Sign Up</h2>
-              <form onSubmit={handleSignup}>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
-                />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                />
-                <button type="submit">Sign Up</button>
-              </form>
-            </div>
-          ) : (
-            <div>
-              <h2>Sign In</h2>
-              <form onSubmit={handleSignIn}>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
-                />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                />
-                <button type="submit">Sign In</button>
-              </form>
+          {/* Quiz Question */}
+          {currentQuestion && (
+            <div id="question-container">
+              <h2>{currentQuestion.question}</h2>
+              {currentQuestion.options.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleAnswer(index)}
+                  disabled={isAnswered}
+                  className="answer-option"
+                >
+                  {option}
+                </button>
+              ))}
             </div>
           )}
 
-          <button onClick={toggleForm}>
-            {isSignUp
-              ? "Already have an account? Sign In"
-              : "Don't have an account? Sign Up"}
-          </button>
+          {/* Next Question / Show Score Button */}
+          {!showTryAgain ? (
+            <button onClick={nextQuestion}>
+              {currentQuestionIndex < questions.length - 1
+                ? "Next Question"
+                : "Show Score"}
+            </button>
+          ) : (
+            <button onClick={restartQuiz}>Take the quiz again</button>
+          )}
+          {/* Result Message */}
+          <p id="resultMessage">{resultMessage}</p>
         </div>
-
-        {/* Messages */}
+      ) : (
         <div>
-          {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
-          {successMessage && <p style={{ color: "green" }}>{successMessage}</p>}
-        </div>
+          {/* Conditional Rendering for SignUp/SignIn */}
+          <div>
+            {isSignUp ? (
+              <div>
+                <h2>Sign Up</h2>
+                <form onSubmit={handleSignup}>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                  />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                  />
+                  <button type="submit">Sign Up</button>
+                </form>
+              </div>
+            ) : (
+              <div>
+                <h2>Sign In</h2>
+                <form onSubmit={handleSignIn}>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                  />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                  />
+                  <button type="submit">Sign In</button>
+                </form>
+              </div>
+            )}
 
-        {/* Quiz Question */}
-        {currentQuestion && (
-          <div id="question-container">
-            <h2>{currentQuestion.question}</h2>
-            {currentQuestion.options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleAnswer(index)}
-                disabled={isAnswered}
-                className="answer-option"
-              >
-                {option}
-              </button>
-            ))}
+            <button onClick={toggleForm}>
+              {isSignUp
+                ? "Already have an account? Sign In"
+                : "Don't have an account? Sign Up"}
+            </button>
           </div>
-        )}
 
-        {/* Next Question / Show Score Button */}
-        <button onClick={nextQuestion}>
-          {currentQuestionIndex < questions.length - 1
-            ? "Next Question"
-            : "Show Score"}
-        </button>
-
-        {/* Result Message */}
-        <p id="resultMessage">{resultMessage}</p>
-      </div>
+          {/* Messages */}
+          <div>
+            {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
+            {successMessage && (
+              <p style={{ color: "green" }}>{successMessage}</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
